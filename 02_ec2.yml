@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: ec2 Create
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Name Prefix
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: EC2 Configuration
+        Parameters:
+          - EC2ImageId
+          - EC2InstanceType
+          - KeyPair
+          - VolumeType
+          - VolumeSize
+
+Parameters:
+  #=================================
+  # Prefixを指定
+  #=================================
+  PJPrefix:
+    Type: String
+
+  #=================================
+  # EC2関連
+  #=================================
+  EC2ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+
+  EC2InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.medium
+      - t2.large
+
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Select KeyPair Name.
+
+  VolumeType:
+    Type: String
+    Default: gp3
+    AllowedValues:
+      - gp3
+      - gp2
+      - io2
+      - io1
+    Description: Select Volume Type.
+
+  VolumeSize:
+    Type: Number
+    Default: 30
+    Description: Input Volume Size.
+
+Resources:
+  #=================================
+  # セキュリティグループ作成
+  #=================================
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ec2-sg
+      GroupDescription: Allow All ICMP IPv4
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        # ICMP IPv4
+        - IpProtocol: ICMP
+          FromPort: -1 #全て
+          ToPort: -1 #全て
+          CidrIp: 198.19.0.0/16
+      Tags:
+        - Key: Name
+          Value: !Sub ${PJPrefix}-sever-sg
+
+  #=================================
+  # EC2作成　privateサブネット1aに配置
+  #=================================
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPair
+      ImageId: !Ref EC2ImageId
+      InstanceType: !Ref EC2InstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: !Ref VolumeType
+            VolumeSize: !Ref VolumeSize
+            DeleteOnTermination: true
+      Monitoring: true
+      SecurityGroupIds:
+        - !GetAtt EC2SG.GroupId
+      SubnetId: !ImportValue PrivateSubnet1aId
+      Tags:
+        - Key: Name
+          Value: !Sub ${PJPrefix}-server
+
+
+#=================================
+# output
+#=================================
+Outputs:
+  #=================================
+  # EC2
+  #=================================
+  EC2:
+    Value: !Ref EC2
+    Export:
+      Name: EC2InstanceId
+
+  EC2PublicIP:
+    Value: !GetAtt EC2.PrivateIp
+    Export:
+      Name: EC2PrivateIp
+    Description: Private IP of EC2 instance
+
+  EC2SG:
+    Value: !Ref EC2SG
+    Export:
+      Name: EC2SGId

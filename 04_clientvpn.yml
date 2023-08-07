@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Client VPN Endpoint Create
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Name Prefix
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: ClientVPN Certificate Setting
+        Parameters:
+          - ServerCertificateARN
+          - ClientCertificateARN
+      - Label:
+          default: ClientVPN Configuration
+        Parameters:
+          - ClientCidrBlock
+
+Parameters:
+  #=================================
+  # Prefixを指定
+  #=================================
+  PJPrefix:
+    Type: String
+
+  #=================================
+  # ACM関連
+  #=================================
+  ServerCertificateARN:
+    Type: String
+    Default: arn:aws:acm:ap-northeast-1:XXXXXXXXXXXXXXXXXXXXXXXXXXX
+    Description: ServerCertificateARN.
+
+  ClientCertificateARN:
+    Type: String
+    Default: arn:aws:acm:ap-northeast-1:XXXXXXXXXXXXXXXXXXXXXXXXXXX
+    Description: ClientCertificateARN.
+
+  #=================================
+  # ClientVPN関連
+  #=================================
+  ClientCidrBlock:
+    Type: String
+    Default: 100.64.0.0/22
+
+
+#=================================
+# Resources
+#=================================
+Resources:
+
+  ClientVPNEndpoint:
+    Type: AWS::EC2::ClientVpnEndpoint
+    Properties: 
+      AuthenticationOptions: 
+        - Type: certificate-authentication
+          MutualAuthentication:
+            ClientRootCertificateChainArn: !Ref ServerCertificateARN
+      ClientCidrBlock: !Ref ClientCidrBlock
+      Description: ClientVPN Endpoint for XXXX server
+      ConnectionLogOptions: 
+        Enabled: 'true'
+        CloudwatchLogGroup: !ImportValue LogGroupName
+        CloudwatchLogStream: !ImportValue LogStreamName
+      ServerCertificateArn: !Ref ServerCertificateARN
+      SplitTunnel: 'true'
+      TagSpecifications: 
+        - ResourceType: client-vpn-endpoint
+          Tags: 
+            - Key: Name
+              Value: !Sub ${PJPrefix}-clientvpn-endpoiint
+      TransportProtocol: udp
+      VpcId: !ImportValue VpcId
+      VpnPort: 1194
+
+  VPNAuthRule:
+    Type: AWS::EC2::ClientVpnAuthorizationRule
+    Properties:
+      ClientVpnEndpointId: !Ref ClientVPNEndpoint
+      # 全ての認証を許可
+      AuthorizeAllGroups: 'true'
+      TargetNetworkCidr: 0.0.0.0/0
+      Description: Authorize All Access.
+
+
+  ClientVPNAssociation:
+    Type: AWS::EC2::ClientVpnTargetNetworkAssociation
+    Properties: 
+      ClientVpnEndpointId: !Ref ClientVPNEndpoint
+      SubnetId: !ImportValue PrivateSubnet255aId
+
+#=================================
+# output
+#=================================
+Outputs:
+  ClientVPNEndpoint:
+    Value: !Ref ClientVPNEndpoint
+    Export:
+      Name: ClientVpnEndpoint
+

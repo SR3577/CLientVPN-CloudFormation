@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: VPC ~ Subnet create
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Name Prefix
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: VPC Configuration
+        Parameters:
+          - VpcCidr
+      - Label:
+          default: Subnet Configuration
+        Parameters:
+          - PrivateSubnet1aCidr
+          - PrivateSubnet255aCidr
+
+Parameters:
+  #=================================
+  # Prefixを指定
+  #=================================
+  PJPrefix:
+    Type: String
+
+  #=================================
+  # VPC関連
+  #=================================
+
+  VpcCidr:
+    Type: String
+    Default: 198.19.0.0/16
+    Description: Input VPC CIDR.
+
+
+  #=================================
+  # サブネット関連
+  #=================================
+  PrivateSubnet1aCidr:
+    Type: String
+    Default: 198.19.1.0/24
+    Description: Input PrivateSubnet1a CIDR.
+
+  PrivateSubnet255aCidr:
+    Type: String
+    Default: 198.19.255.0/24
+    Description: Input PrivateSubnet255a CIDR.
+
+
+Resources:
+  #=================================
+  # VPCの作成
+  #=================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${PJPrefix}-vpc
+
+  #=================================
+  # privateサブネット1aの作成
+  #=================================
+  PrivateSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnet1aCidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${PJPrefix}-private-subnet-1a
+
+  #=================================
+  # privateサブネット255aの作成
+  #=================================
+  PrivateSubnet255a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnet255aCidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${PJPrefix}-private-subnet-255a
+
+
+
+#=================================
+# output
+#=================================
+Outputs:
+  #=================================
+  # VPCID,CIDR
+  #=================================
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: VpcId
+
+  VpcCidr:
+    Value: !Ref VpcCidr
+    Export:
+      Name: !Sub VpcCidr
+
+  #=================================
+  # PrivateSubnetID,CIDR
+  #=================================
+  PrivateSubnet1a:
+    Value: !Ref PrivateSubnet1a
+    Export:
+      Name: PrivateSubnet1aId
+
+  PrivateSubnet1aCidr:
+    Value: !Ref PrivateSubnet1aCidr
+    Export:
+      Name: PrivateSubnet1aCidr
+
+
+  PrivateSubnet255a:
+    Value: !Ref PrivateSubnet255a
+    Export:
+      Name: PrivateSubnet255aId
+
+  PrivateSubnet255aCidr:
+    Value: !Ref PrivateSubnet255aCidr
+    Export:
+      Name: PrivateSubnet255aCidr
