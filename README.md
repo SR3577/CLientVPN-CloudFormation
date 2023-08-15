@@ -1,12 +1,12 @@
-# ClientVPNをCloudFormationを使って構築する
+# AWSClientVPNをCloudFormationを使って構築する
 
 ## 概要
 
-- AWSのClientVPNをCloudFormationで作成したもの。
+- AWSClientVPNをCloudFormationで作成したもの。
 
 - 証明書の作成やダウンロードなど、完全にコード化はできなかったが手作業よりミスが減るはず。
 
-- AWSのClientVPNを使用して社内で使用するサーバーの構築をしてほしいと依頼されたため調査、作成。
+- AWSClientVPNを使用して構築をしてほしいと依頼されたため調査、作成。
 
 - 調査していると、AWSの「AWS Hands-on for Beginners」にちょうど良いものがあったため、同様のものを検証用に構築。
 
